@@ -17,6 +17,8 @@ import random
 import time
 import pdb
 
+from icecream import ic
+
 
 class roibatchLoader(data.Dataset):
     def __init__(self, roidb, ratio_list, ratio_index, batch_size, num_classes,
@@ -69,6 +71,7 @@ class roibatchLoader(data.Dataset):
         im_info = torch.from_numpy(blobs['im_info'])
         # we need to random shuffle the bounding box.
         data_height, data_width = data.size(1), data.size(2)
+        ic(data_height, data_width)
         if self.training:
             np.random.shuffle(blobs['gt_boxes'])
             gt_boxes = torch.from_numpy(blobs['gt_boxes'])
@@ -158,9 +161,11 @@ class roibatchLoader(data.Dataset):
                     gt_boxes[:, 2].clamp_(0, trim_size - 1)
 
             # based on the ratio, padding the image.
+            ic(data_height, data_width, data.shape)
             if ratio < 1:
                 # this means that data_width < data_height
                 trim_size = int(np.floor(data_width / ratio))
+
 
                 padding_data = torch.FloatTensor(int(np.ceil(data_width / ratio)), \
                                                  data_width, 3).zero_()

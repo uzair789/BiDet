@@ -33,7 +33,7 @@ class coco(imdb):
         # name, paths
         self._year = year
         self._image_set = image_set
-        self._data_path = "/path/to/coco/"
+        self._data_path = "/home/biometrics/data/coco"
         # load COCO API, classes, class <-> id mappings
         self._COCO = COCO(self._get_ann_file())
         cats = self._COCO.loadCats(self._COCO.getCatIds())
