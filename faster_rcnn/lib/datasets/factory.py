@@ -21,14 +21,23 @@ for year in ['2007', '2012']:
     for split in ['train', 'val', 'trainval', 'test']:
         name = 'voc_{}_{}'.format(year, split)
         __sets[name] = (lambda split=split, year=year: pascal_voc(split, year,
-                                                                  devkit_path='/path/to/voc/'))
-
+                                                                  devkit_path='/home/biometrics/data/VOCdevkit'))
+'''
 # Set up coco_2014_<split>
 for year in ['2014']:
     for split in ['train', 'val', 'minival', 'valminusminival', 'trainval']:
+    #for split in ['train', 'val',  'trainval']:
+        print('------>>>>>>', split)
         name = 'coco_{}_{}'.format(year, split)
         __sets[name] = (lambda split=split, year=year: coco(split, year))
+'''
 
+for year in ['2017']:
+    for split in ['train', 'val']:
+    #for split in ['train', 'val',  'trainval']:
+        print('------>>>>>>', split)
+        name = 'coco_{}_{}'.format(year, split)
+        __sets[name] = (lambda split=split, year=year: coco(split, year))
 
 def get_imdb(name):
     """Get an imdb (image database) by name."""

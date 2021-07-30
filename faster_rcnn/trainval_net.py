@@ -7,8 +7,11 @@ import random
 import numpy as np
 import torch
 
+import neptune
+
 SEED = 1
 
+neptune.init('uzair789/Distillation')
 
 def set_seed(seed=1):
     random.seed(seed)
@@ -39,7 +42,7 @@ from lib.model.utils.net_utils import weights_normal_init, save_net, load_net, \
 
 from lib.model.faster_rcnn.bidet_resnet import bidet_resnet
 
-os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+#os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 
 
 def str2bool(v):
@@ -81,7 +84,7 @@ def parse_args():
                         default=False, type=str2bool)
     parser.add_argument('--mGPUs', dest='mGPUs',
                         help='whether use multiple GPUs',
-                        default=False, type=str2bool)
+                        default=True, type=str2bool)
     parser.add_argument('--bs', dest='batch_size',
                         help='batch_size',
                         default=16, type=int)
@@ -146,6 +149,12 @@ def parse_args():
                         help='sigma for sampling loc data',
                         default=0.001, type=float)
 
+    parser.add_argument('--exp_name', help='checkpoint to load model',
+                        default='BiDet', type=str)
+    parser.add_argument('--caption', help='caption for experiment',
+                        default='', type=str)
+    parser.add_argument('--server', help='server running the experiment',
+                        default='ultron', type=str)
     args = parser.parse_args()
     return args
 
@@ -179,7 +188,20 @@ class sampler(Sampler):
 if __name__ == '__main__':
 
     args = parse_args()
+    PARAMS = {'dataset': args.dataset,
+              'exp_name': args.exp_name,
+              'epochs': args.max_epochs,
+              'batch_size': args.batch_size,
+              'lr': args.lr,
+              'caption': args.caption,
+              'server': args.server
+    }
 
+    exp = neptune.create_experiment(name=args.exp_name, params=PARAMS, tags=[args.backbone,
+                                                                                args.caption,
+                                                                                'BiDet',
+                                                                                args.dataset,
+                                                                                args.server])
     print('Called with args:')
     print(args)
 
@@ -188,8 +210,10 @@ if __name__ == '__main__':
         args.imdbval_name = "voc_2007_test"
         args.set_cfgs = ['ANCHOR_SCALES', '[8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]', 'MAX_NUM_GT_BOXES', '20']
     elif args.dataset == "coco":
-        args.imdb_name = "coco_2014_train+coco_2014_valminusminival"
-        args.imdbval_name = "coco_2014_minival"
+        #args.imdb_name = "coco_2014_train+coco_2014_valminusminival"
+        #args.imdbval_name = "coco_2014_minival"
+        args.imdb_name = "coco_2017_train"
+        args.imdbval_name = "coco_2017_valll"
         args.set_cfgs = ['ANCHOR_SCALES', '[4, 8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]', 'MAX_NUM_GT_BOXES', '50']
     else:
         exit(-1)
@@ -332,6 +356,8 @@ if __name__ == '__main__':
         epoch_head_reg_loss = 0.
         start = time.time()
 
+        exp.log_metric('Current lr', float(lr))
+        exp.log_metric('Current epoch', int(epoch))
         if epoch != 1 and (epoch - 1) % args.lr_decay_step == 0 and lr * args.lr_decay_gamma >= 1e-6:
             if lr == args.lr:
                 args.rpn_prior_weight = 0.01
@@ -393,6 +419,16 @@ if __name__ == '__main__':
             loss.backward()
             optimizer.step()
 
+            exp.log_metric('loss', epoch_loss)
+            exp.log_metric('epoch_rpn_cls_loss', epoch_rpn_cls_loss)
+            exp.log_metric('epoch_rpn_bbox_loss', epoch_rpn_bbox_loss)
+            exp.log_metric('epoch_rcnn_cls_loss', epoch_rcnn_cls_loss)
+            exp.log_metric('epoch_rcnn_bbox_loss', epoch_rcnn_bbox_loss)
+            exp.log_metric('epoch_rpn_prior_loss', epoch_rpn_prior_loss)
+            exp.log_metric('epoch_rpn_reg_loss', epoch_rpn_reg_loss)
+            exp.log_metric('epoch_head_prior_loss', epoch_head_prior_loss)
+            exp.log_metric('epoch_head_reg_loss', epoch_head_reg_loss)
+
             if step % args.disp_interval == 0:
                 end = time.time()
                 if step > 0:
@@ -419,6 +455,8 @@ if __name__ == '__main__':
                       "\t\t\trpn_prior %.4f, rpn_reg %.4f, head_prior %.4f, head_reg %.4f" %
                       (loss_rpn_cls, loss_rpn_box, loss_rcnn_cls, loss_rcnn_box,
                        rpn_prior_loss, rpn_reg_loss, head_prior_loss, head_reg_loss))
+
+
 
                 loss_temp = 0.
                 start = time.time()

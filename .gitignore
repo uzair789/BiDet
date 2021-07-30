@@ -14,7 +14,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+#lib/
+faster_rcnn/pretrain
 lib64/
 parts/
 sdist/

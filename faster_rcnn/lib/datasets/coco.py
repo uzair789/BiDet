@@ -26,6 +26,7 @@ from pycocotools import mask as COCOmask
 
 class coco(imdb):
     def __init__(self, image_set, year):
+        print('IN COCO', image_set)
         imdb.__init__(self, 'coco_' + year + '_' + image_set)
         # COCO specific config options
         self.config = {'use_salt': True,
@@ -33,7 +34,8 @@ class coco(imdb):
         # name, paths
         self._year = year
         self._image_set = image_set
-        self._data_path = "/path/to/coco/"
+        #self._data_path = "/home/biometrics/data/coco/"
+        self._data_path = "/media/School/Datasets/coco/"
         # load COCO API, classes, class <-> id mappings
         self._COCO = COCO(self._get_ann_file())
         cats = self._COCO.loadCats(self._COCO.getCatIds())
@@ -49,23 +51,26 @@ class coco(imdb):
         # Some image sets are "views" (i.e. subsets) into others.
         # For example, minival2014 is a random 5000 image subset of val2014.
         # This mapping tells us where the view's images and proposals come from.
-        self._view_map = {
-            'minival2014': 'val2014',  # 5k val2014 subset
-            'valminusminival2014': 'val2014',  # val2014 \setminus minival2014
-            'test-dev2015': 'test2015',
-            'valminuscapval2014': 'val2014',
-            'capval2014': 'val2014',
-            'captest2014': 'val2014'
-        }
+        #self._view_map = {
+        #    'minival2014': 'val2014',  # 5k val2014 subset
+        #    'valminusminival2014': 'val2014',  # val2014 \setminus minival2014
+        #    'test-dev2015': 'test2015',
+        #    'valminuscapval2014': 'val2014',
+        #    'capval2014': 'val2014',
+        #    'captest2014': 'val2014'
+        #}
         coco_name = image_set + year  # e.g., "val2014"
-        self._data_name = (self._view_map[coco_name]
-                           if coco_name in self._view_map
-                           else coco_name)
+        #self._data_name = (self._view_map[coco_name]
+        #                   if coco_name in self._view_map
+        #                   else coco_name)
+        self._data_name = coco_name
         # Dataset splits that have ground-truth annotations (test splits
         # do not have gt annotations)
-        self._gt_splits = ('train', 'val', 'minival')
+        #self._gt_splits = ('train', 'val', 'minival')
+        self._gt_splits = ('train', 'val')#, 'minival')
 
     def _get_ann_file(self):
+        print("LOADING -------------->>>>>>>>", self._image_set)
         prefix = 'instances' if self._image_set.find('test') == -1 \
             else 'image_info'
         return osp.join(self._data_path, 'annotations',
@@ -101,8 +106,9 @@ class coco(imdb):
         """
         # Example image path for index=119993:
         #   images/train2014/COCO_train2014_000000119993.jpg
-        file_name = ('COCO_' + self._data_name + '_' +
-                     str(index).zfill(12) + '.jpg')
+        #file_name = ('COCO_' + self._data_name + '_' +
+        #             str(index).zfill(12) + '.jpg')
+        file_name = (str(index).zfill(12) + '.jpg')
         image_path = osp.join(self._data_path, 'images',
                               self._data_name, file_name)
         assert osp.exists(image_path), \
