@@ -367,7 +367,10 @@ if __name__ == '__main__':
                 fasterRCNN.rpn_prior_weight = args.rpn_prior_weight
                 fasterRCNN.head_prior_weight = args.head_prior_weight
                 fasterRCNN.head_reg_weight = args.head_reg_weight
-                fasterRCNN.RCNN_rpn.reg_weight = args.rpn_reg_weight
+                if args.mGPUs:
+                    fasterRCNN.module.RCNN_rpn.reg_weight = args.rpn_reg_weight
+                else:
+                    fasterRCNN.RCNN_rpn.reg_weight = args.rpn_reg_weight
             adjust_learning_rate(optimizer, args.lr_decay_gamma)
             lr *= args.lr_decay_gamma
 
@@ -419,16 +422,6 @@ if __name__ == '__main__':
             loss.backward()
             optimizer.step()
 
-            exp.log_metric('loss', epoch_loss)
-            exp.log_metric('epoch_rpn_cls_loss', epoch_rpn_cls_loss)
-            exp.log_metric('epoch_rpn_bbox_loss', epoch_rpn_bbox_loss)
-            exp.log_metric('epoch_rcnn_cls_loss', epoch_rcnn_cls_loss)
-            exp.log_metric('epoch_rcnn_bbox_loss', epoch_rcnn_bbox_loss)
-            exp.log_metric('epoch_rpn_prior_loss', epoch_rpn_prior_loss)
-            exp.log_metric('epoch_rpn_reg_loss', epoch_rpn_reg_loss)
-            exp.log_metric('epoch_head_prior_loss', epoch_head_prior_loss)
-            exp.log_metric('epoch_head_reg_loss', epoch_head_reg_loss)
-
             if step % args.disp_interval == 0:
                 end = time.time()
                 if step > 0:
@@ -449,6 +442,15 @@ if __name__ == '__main__':
                     fg_cnt = torch.sum(rois_label.data.ne(0))
                     bg_cnt = rois_label.data.numel() - fg_cnt
 
+                exp.log_metric('iter_loss', loss_temp)
+                exp.log_metric('iter_rpn_cls_loss', loss_rpn_cls)
+                exp.log_metric('iter_rpn_bbox_loss', loss_rpn_box)
+                exp.log_metric('iter_rcnn_cls_loss', loss_rcnn_cls)
+                exp.log_metric('iter_rcnn_bbox_loss', loss_rcnn_box)
+                exp.log_metric('iter_rpn_prior_loss', rpn_prior_loss)
+                exp.log_metric('iter_rpn_reg_loss', rpn_reg_loss)
+                exp.log_metric('iter_head_prior_loss', head_prior_loss)
+                exp.log_metric('iter_head_reg_loss', head_reg_loss)
                 print("[epoch %2d][iter %4d/%4d] loss: %.4f, lr: %.2e" % (epoch, step, iters_per_epoch, loss_temp, lr))
                 print("\t\t\tfg/bg=(%d/%d), time cost: %f" % (fg_cnt, bg_cnt, end - start))
                 print("\t\t\trpn_cls: %.4f, rpn_box: %.4f, rcnn_cls: %.4f, rcnn_box %.4f, "
@@ -456,11 +458,19 @@ if __name__ == '__main__':
                       (loss_rpn_cls, loss_rpn_box, loss_rcnn_cls, loss_rcnn_box,
                        rpn_prior_loss, rpn_reg_loss, head_prior_loss, head_reg_loss))
 
-
-
                 loss_temp = 0.
                 start = time.time()
                 torch.cuda.empty_cache()
+
+        exp.log_metric('epoch_loss', epoch_loss)
+        exp.log_metric('epoch_rpn_cls_loss', epoch_rpn_cls_loss)
+        exp.log_metric('epoch_rpn_bbox_loss', epoch_rpn_bbox_loss)
+        exp.log_metric('epoch_rcnn_cls_loss', epoch_rcnn_cls_loss)
+        exp.log_metric('epoch_rcnn_bbox_loss', epoch_rcnn_bbox_loss)
+        exp.log_metric('epoch_rpn_prior_loss', epoch_rpn_prior_loss)
+        exp.log_metric('epoch_rpn_reg_loss', epoch_rpn_reg_loss)
+        exp.log_metric('epoch_head_prior_loss', epoch_head_prior_loss)
+        exp.log_metric('epoch_head_reg_loss', epoch_head_reg_loss)
 
         save_name = os.path.join(output_dir, 'model_{}_loss_{}_lr_{}_'
                                              'rpn_cls_{}_rpn_bbox_{}_'

@@ -15,7 +15,9 @@ downloads/
 eggs/
 .eggs/
 #lib/
+logs/
 faster_rcnn/pretrain
+ssd/pretrain
 lib64/
 parts/
 sdist/
